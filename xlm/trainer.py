@@ -15,7 +15,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 from torch.nn.utils import clip_grad_norm_
-import apex
+# import apex
 
 from .optim import get_optimizer
 from .utils import to_cuda, concat_batches, find_modules
@@ -857,7 +857,8 @@ class EncDecTrainer(Trainer):
         # loss
         _, loss = self.decoder('predict', tensor=dec2, pred_mask=pred_mask, y=y, get_scores=False)
         self.stats[('AE-%s' % lang1) if lang1 == lang2 else ('MT-%s-%s' % (lang1, lang2))].append(loss.item())
-        loss = lambda_coeff * loss
+        # loss = lambda_coeff * loss
+        loss = lambda_coeff * loss + 0 * sum(p.sum() for p in self.encoder.parameters())
 
         # optimize
         self.optimize(loss)
