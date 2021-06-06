@@ -48,12 +48,16 @@ def get_parser():
     # model parameters
     parser.add_argument("--emb_dim", type=int, default=512,
                         help="Embedding layer size")
-    parser.add_argument("--n_layers", type=int, default=4,
+    parser.add_argument("--n_layers", type=int, default=6,
                         help="Number of Transformer layers")
+    parser.add_argument("--ffn_embed_dim", type=int, default=2048,
+                        help="ffn_embed_dim")
     parser.add_argument("--n_heads", type=int, default=8,
                         help="Number of Transformer heads")
     parser.add_argument("--dropout", type=float, default=0,
                         help="Dropout")
+    parser.add_argument("--label_smoothing", type=float, default=0,
+                        help="--label_smoothing")
     parser.add_argument("--attention_dropout", type=float, default=0,
                         help="Dropout in the attention layer")
     parser.add_argument("--gelu_activation", type=bool_flag, default=False,

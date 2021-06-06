@@ -110,6 +110,7 @@ class PredLayer(nn.Module):
         self.asm = params.asm
         self.n_words = params.n_words
         self.pad_index = params.pad_index
+        self.crit = LabelSmoothing(smoothing=params.label_smoothing)
         dim = params.emb_dim
 
         if params.asm is False:
@@ -131,7 +132,8 @@ class PredLayer(nn.Module):
 
         if self.asm is False:
             scores = self.proj(x).view(-1, self.n_words)
-            loss = F.cross_entropy(scores, y, reduction='mean')
+            # loss = F.cross_entropy(scores, y, reduction='mean')
+            loss = self.crit(scores, y)
         else:
             _, loss = self.proj(x, y)
             scores = self.proj.log_prob(x) if get_scores else None
@@ -145,6 +147,24 @@ class PredLayer(nn.Module):
         assert x.dim() == 2
         return self.proj.log_prob(x) if self.asm else self.proj(x)
 
+class LabelSmoothing(nn.Module):
+    """NLL loss with label smoothing.
+    """
+    def __init__(self, smoothing=0.0):
+        """Constructor for the LabelSmoothing module.
+        :param smoothing: label smoothing factor
+        """
+        super(LabelSmoothing, self).__init__()
+        self.confidence = 1.0 - smoothing
+        self.smoothing = smoothing
+
+    def forward(self, x, target):
+        logprobs = torch.nn.functional.log_softmax(x, dim=-1)
+        nll_loss = -logprobs.gather(dim=-1, index=target.unsqueeze(1))
+        nll_loss = nll_loss.squeeze(1)
+        smooth_loss = -logprobs.mean(dim=-1)
+        loss = self.confidence * nll_loss + self.smoothing * smooth_loss
+        return loss.mean()
 
 class MultiHeadAttention(nn.Module):
 
@@ -265,7 +285,8 @@ class TransformerModel(nn.Module):
 
         # model parameters
         self.dim = params.emb_dim       # 512 by default
-        self.hidden_dim = self.dim * 4  # 2048 by default
+        # self.hidden_dim = self.dim * 4  # 2048 by default
+        self.hidden_dim = params.ffn_embed_dim
         self.n_heads = params.n_heads   # 8 by default
         self.n_layers = params.n_layers
         self.dropout = params.dropout
